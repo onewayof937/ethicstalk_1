@@ -2,33 +2,68 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>생윤톡톡</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #fdf2f8; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        #chat-container { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 15px; }
+    </style>
 </head>
 <body>
-    <h1>생윤톡톡에 오신 것을 환영합니다!</h1>
-    <div id="chat-container"></div>
-    <input type="text" id="userInput" placeholder="질문을 입력하세요...">
-    <button onclick="sendMessage()">전송</button>
+    <div class="flex items-center justify-center py-2 bg-white shadow-sm border-b border-pink-100">
+        <svg width="50" height="50" viewBox="0 0 100 100">
+            <circle cx="50" cy="40" r="30" fill="#ffe0b2"/>
+            <ellipse cx="40" cy="35" rx="4" ry="7" fill="#333"/>
+            <ellipse cx="60" cy="35" rx="4" ry="7" fill="#333"/>
+            <path d="M40 60 Q50 65 60 60" stroke="#333" stroke-width="3" fill="none"/>
+        </svg>
+        <div class="ml-3 text-sm font-bold text-pink-600">우정 레벨 <span id="lv">1</span></div>
+    </div>
+
+    <div id="chat-container" class="space-y-4">
+        <div class="text-left p-3 bg-white border border-pink-100 rounded-lg shadow-sm text-sm">
+            안녕! 철학에 대해 궁금한 게 있니? 오늘도 우리 같이 성장해보자!
+        </div>
+    </div>
+
+    <div class="p-3 bg-white border-t border-pink-100">
+        <div class="flex gap-2">
+            <input type="text" id="userInput" class="flex-1 p-3 rounded-full border border-pink-200 outline-none text-sm" placeholder="질문을 입력하세요...">
+            <button onclick="sendMessage()" id="sendBtn" class="bg-pink-500 text-white px-5 py-2 rounded-full font-bold text-sm">전송</button>
+        </div>
+    </div>
 
     <script>
+        let lv = 1;
         async function sendMessage() {
-            const userInput = document.getElementById('userInput').value;
-            const chatContainer = document.getElementById('chat-container');
-            
-            chatContainer.innerHTML += `<p>나: ${userInput}</p>`;
+            const input = document.getElementById('userInput');
+            const chat = document.getElementById('chat-container');
+            const btn = document.getElementById('sendBtn');
+            if (!input.value.trim()) return;
 
-            // 아래가 서버 통신 부분입니다. 
-            // Vercel 서버(/api/chat)로 안전하게 질문을 보냅니다.
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: userInput }] }] })
-            });
+            chat.innerHTML += `<div class="text-right p-3 bg-pink-500 text-white rounded-lg shadow-sm text-sm ml-auto max-w-[80%]">${input.value}</div>`;
+            input.value = '';
+            btn.disabled = true;
 
-            const data = await response.json();
-            const aiReply = data.candidates[0].content.parts[0].text;
-            
-            chatContainer.innerHTML += `<p>AI: ${aiReply}</p>`;
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: input.value + " (친절한 여고생 친구처럼 답변해줘. 성장을 응원하고 긍정적인 말투를 사용해.)" }] }] })
+                });
+                const data = await res.json();
+                const reply = data.candidates[0].content.parts[0].text;
+                
+                chat.innerHTML += `<div class="text-left p-3 bg-white border border-pink-100 rounded-lg shadow-sm text-sm max-w-[80%]">${reply}</div>`;
+                lv++;
+                document.getElementById('lv').innerText = lv;
+                chat.scrollTop = chat.scrollHeight;
+            } catch(e) {
+                chat.innerHTML += `<div class="text-center text-red-400 text-xs mt-2">앗, 지금 서버가 조금 바빠! 1초 뒤에 다시 보내줘!</div>`;
+            } finally {
+                btn.disabled = false;
+            }
         }
     </script>
 </body>
