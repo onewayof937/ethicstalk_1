@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>생윤톡톡</title>
+</head>
+<body>
+    <h1>생윤톡톡에 오신 것을 환영합니다!</h1>
+    <div id="chat-container"></div>
+    <input type="text" id="userInput" placeholder="질문을 입력하세요...">
+    <button onclick="sendMessage()">전송</button>
+
+    <script>
+        async function sendMessage() {
+            const userInput = document.getElementById('userInput').value;
+            const chatContainer = document.getElementById('chat-container');
+            
+            chatContainer.innerHTML += `<p>나: ${userInput}</p>`;
+
+            // 아래가 서버 통신 부분입니다. 
+            // Vercel 서버(/api/chat)로 안전하게 질문을 보냅니다.
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: userInput }] }] })
+            });
+
+            const data = await response.json();
+            const aiReply = data.candidates[0].content.parts[0].text;
+            
+            chatContainer.innerHTML += `<p>AI: ${aiReply}</p>`;
+        }
+    </script>
+</body>
+</html>
